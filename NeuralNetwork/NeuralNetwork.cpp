@@ -5,10 +5,10 @@
 class NeuronLink;
 class Entity;
 class Action;
-#pragma region Neurons
+
 class Neuron {
 public:
-    Neuron() { mPower = (rand() % 10) / 10; };
+    Neuron() {  };
     std::vector<NeuronLink*> GetInputLinks() { return mInputLinks; };
     void SetInputLinks(std::vector<NeuronLink*> links) { mInputLinks = links; };
 
@@ -19,18 +19,19 @@ public:
     void AddInputLink(NeuronLink* link) { mInputLinks.push_back(link); };
     void AddOutputLink(NeuronLink* link) { mOutputLinks.push_back(link); };
 
-    float GetPower() { return mPower; };
 protected:
     //All the linnks connected to this neuron
     std::vector<NeuronLink*> mInputLinks;
     std::vector<NeuronLink*> mOutputLinks;
-    float mPower = 0.5f;
+   
 };
 
 class InputNeuron : public Neuron {
 public:
+    InputNeuron() { mPower = (rand() % 10) / 10; };
     virtual float Output() override;
-    
+    float GetPower() { return mPower; };
+    float mPower = 0.5f;
 };
 class HiddenNeuron : public Neuron {
 public:
@@ -45,43 +46,34 @@ public:
 private:
     Action* mAction;
 };
-#pragma endregion
 
-#pragma region Actions
+
+
 class Action {
 public:
-    virtual void DoAction(Entity* entity);
+    virtual void DoAction(Entity* entity) {
+
+    };
 };
 
 class MoveForward : public Action {
 public:
-    virtual void DoAction(Entity* entity) override {
-        entity->MoveY(1);
-    };
+    virtual void DoAction(Entity* entity) override;
 };
 class MoveBackward : public Action {
 public:
-    virtual void DoAction(Entity* entity) override {
-        entity->MoveX(-1);
-    };
+    virtual void DoAction(Entity* entity) override;
 };
 
 class MoveRight : public Action {
 public:
-    virtual void DoAction(Entity* entity) override {
-        entity->MoveX(1);
-    };
+    virtual void DoAction(Entity* entity) override;
 };
 
 class MoveLeft : public Action {
 public:
-    virtual void DoAction(Entity* entity) override {
-        entity->MoveX(-1);
-    };
+    virtual void DoAction(Entity* entity) override;
 };
-
-
-#pragma endregion
 
 class NeuronLink {
 public:
@@ -166,6 +158,17 @@ public:
     void DoAction() {
         //Get the highest output from the brain
         std::vector<OutputNeuron*> actions = mBrain->GetOutput();
+        OutputNeuron* toDo = actions[0];
+        float current = -10;
+        for (size_t i = 0; i < actions.size(); i++)
+        {
+            if (actions[i]->Output() > current) {
+                current = actions[i]->Output();
+                toDo = actions[i];
+            }
+        }
+
+        toDo->GetAction()->DoAction(this);
     };
     void SetNeuralNet(NeuralNet* net) { mBrain = net; };
     NeuralNet* GetNeuralNet() { return mBrain; };
@@ -183,11 +186,16 @@ private:
 };
 int main()
 {
+
     //Create neurons
     //Input has to check a thing
     std::vector<InputNeuron*> input;
-    //
+    //input.push_back(new InputNeuron());
     std::vector<HiddenNeuron*> hidden;
+    for (size_t i = 0; i < 4; i++)
+    {
+        hidden.push_back(new HiddenNeuron());
+    }
     //Each output neuron has an action to it
     std::vector<OutputNeuron*> output;
 
@@ -292,5 +300,21 @@ float OutputNeuron::Output()
     {
         sum += mInputLinks[i]->GetFirst()->Output() * mInputLinks[i]->GetWeight();
     }
-    return tanh(sum);
+    return sum / (1 + abs(sum));
+}
+
+void MoveForward::DoAction(Entity* entity)
+{
+    entity->MoveY(-1);
+}
+
+void MoveBackward::DoAction(Entity* entity) {
+    entity->MoveY(1);
+}
+
+void MoveRight::DoAction(Entity* entity) {
+    entity->MoveX(1);
+}
+void MoveLeft::DoAction(Entity* entity) {
+    entity->MoveX(-1);
 }
